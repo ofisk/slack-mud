@@ -1,10 +1,9 @@
 import os
 import time
 import re
-from rooms import *
+import rooms.globalmap
 from races import *
 from slackclient import SlackClient
-import globalmap
 
 ADMIN_USER = 'U10F84U2J'
 TARGET_CHANNEL = 'C3D4EAVGS'
@@ -15,9 +14,14 @@ users = {}
 
 def handleReset() :
     users = {}
+    sc.api_call(
+        "chat.postMessage",
+        channel="#slackmud",
+        text="Resetting the world."
+    )
 
 def tryCommandInRoom(roomId, command, user) :
-    room = globalmap.getRoom(roomId)
+    room = rooms.globalmap.getRoom(roomId)
     print room
     if command in room["commandMap"].keys() :
         room["commandMap"][command](user)
@@ -31,13 +35,13 @@ def tryCommandInRoom(roomId, command, user) :
         )
 
 def tryMovementFromRoom(roomId, command, user) :
-    room = globalmap.getRoom(roomId)
+    room = rooms.globalmap.getRoom(roomId)
     goPattern = re.compile("go *")
     print room
     if goPattern.match(command) :
         command = command.split("go ")[1]
     if command in room["roomConnections"].keys() :
-        globalmap.getRoom(room["roomConnections"][command])["onEnter"](user)
+        rooms.globalmap.getRoom(room["roomConnections"][command])["onEnter"](user)
     else :
         sc.api_call(
             "chat.postMessage",
@@ -70,10 +74,10 @@ def handleWelcomeOfNewUser(userId, name) :
         channel="#slackmud",
         text="Welcome " + users[userId]["name"] + "! If you don't like your character, type '@slackmud reset character' to reset (your whole character will get reset)."
     )
-    globalmap.getRoom(rooms.roomids.TRAINING_ROOM_ID)["onEnter"](users[userId])
+    rooms.globalmap.getRoom(rooms.roomids.TRAINING_ROOM_ID)["onEnter"](users[userId])
 
 if sc.rtm_connect():
-    globalmap.build()
+    rooms.globalmap.build(sc)
     while True:
         messageRaw = sc.rtm_read()
         print messageRaw
@@ -88,12 +92,12 @@ if sc.rtm_connect():
             messageType = messageRaw[0].get('type', None)
         if (TARGET_CHANNEL != channel or messageType != "message") :
             continue
+        elif (message == '@slackmud reset world' and userId == ADMIN_USER) :
+            handleReset()
         if (message == '@slackmud join') :
             handleJoin(userId)
         elif (users.get(userId, None) == None) :
             continue
-        elif (message == '@slackmud reset world' and userId == ADMIN_USER) :
-            handleReset()
         elif (message == '@slackmud reset character') :
             handleNameResetForUser(userId)
         elif (message == 'n' or message == 'north' or message == 'go north' or

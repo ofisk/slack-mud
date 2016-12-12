@@ -1,7 +1,8 @@
 import shared
 import roomids
+import globalmap
 
-def createTrainingRoom() :
+def createTrainingRoom(sc) :
     def trainingRoomOnEnter(user) :
         user["currentRoomId"] = roomids.TRAINING_ROOM_ID
         sc.api_call(
@@ -33,20 +34,14 @@ def createTrainingRoom() :
             "chat.postMessage",
             channel="#slackmud",
             text="""
-                Training Quiz:  Are you a fuckboy?
-            """
-        )
-        sc.api_call(
-            "chat.postMessage",
-            channel="#slackmud",
-            text="""
-                Just kidding, I don't care at all.
-                Alright, now type 'go north', 'north' or 'n' to move to the next room (it's north of this one, in case you're a dipshit).
+                As you look into the still waters of the fountain you see your face and form start to twist. The voice returns, "Who are you?"
+                You think the question seems odd but suddenly can't remember yourself.  Even the most basic of questions escape you.  Are you male or female?
             """
         )
 
     trainingCompleteRoomConnections = {"s": roomids.TRAINING_ROOM_ID, "south": roomids.TRAINING_ROOM_ID}
     trainingCompleteRoom = shared.createNewRoom(roomids.TRAINING_COMPLETE_ROOM_ID, trainingCompleteRoomOnEnter, None, trainingCompleteRoomConnections)
+    globalmap.addRoom(trainingCompleteRoom)
     commandMap = {
         "look at fountain": beginTrainingQuiz, 
         "look at the fountain": beginTrainingQuiz, 
