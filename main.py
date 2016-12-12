@@ -2,7 +2,7 @@ import os
 import time
 import re
 import rooms.globalmap
-from races import *
+import character.races
 from slackclient import SlackClient
 
 ADMIN_USER = 'U10F84U2J'
