@@ -2,7 +2,7 @@ import shared
 import roomids
 import globalmap
 
-def createTrainingRoom(sc) :
+def createTrainingRoom(sc, mbus, users) :
     def trainingRoomOnEnter(user) :
         user["currentRoomId"] = roomids.TRAINING_ROOM_ID
         sc.api_call(
@@ -14,6 +14,7 @@ def createTrainingRoom(sc) :
                 everywhere beckons you forward, "%s, peer into the Fountain to begin your journey."
             """ % (user["name"])
         )
+
     def trainingCompleteRoomOnEnter(user) :
         user["currentRoomId"] = roomids.TRAINING_COMPLETE_ROOM_ID
         sc.api_call(
@@ -29,15 +30,44 @@ def createTrainingRoom(sc) :
                 Also, fuck York.
             """ % (user["name"])
         )
+
+    def gl_handleGenderReset(userId) :
+        def setGenderForUser(user, command) :
+            adjective = "manly"
+            gender = "male"
+            if (command.lower() != "male") :
+                adjective = "pretty"
+                gender = "female"
+            user = users[userId]
+            user["gender"] = gender
+            users[user["id"]] = user
+            sc.api_call(
+                "chat.postMessage",
+                channel="#slackmud",
+                text=""" You chose {0}, are you sure? Not to say you don't look very {1}. If you'd like to change your gender type '@slackmud reset gender' at any time.""".format(gender, adjective)
+            )
+
+        sc.api_call(
+            "chat.postMessage",
+            channel="#slackmud",
+            text="""
+                Are you male or female?
+            """
+        )
+        mbus.registerCommandForUser(users[userId], setGenderForUser)
+
     def beginTrainingQuiz(user) :
         sc.api_call(
             "chat.postMessage",
             channel="#slackmud",
             text="""
-                As you look into the still waters of the fountain you see your face and form start to twist. The voice returns, "Who are you?"
-                You think the question seems odd but suddenly can't remember yourself.  Even the most basic of questions escape you.  Are you male or female?
+                As you look into the still waters of the fountain you see your face and form start to twist. The 
+                voice returns, "Who are you?" You think the question seems odd but suddenly can't remember yourself.  
+                Even the most basic of questions escape you.
             """
         )
+        gl_handleGenderReset(user["id"])
+
 
     trainingCompleteRoomConnections = {"s": roomids.TRAINING_ROOM_ID, "south": roomids.TRAINING_ROOM_ID}
     trainingCompleteRoom = shared.createNewRoom(roomids.TRAINING_COMPLETE_ROOM_ID, trainingCompleteRoomOnEnter, None, trainingCompleteRoomConnections)
@@ -50,6 +80,9 @@ def createTrainingRoom(sc) :
         "peer into fountain": beginTrainingQuiz, 
         "peer into the fountain": beginTrainingQuiz
     }
+
+
+    mbus.registerGlobalCommand('@slackmud reset gender', gl_handleGenderReset)
 
     return shared.createNewRoom(
         roomids.TRAINING_ROOM_ID, 
