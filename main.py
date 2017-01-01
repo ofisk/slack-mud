@@ -120,6 +120,8 @@ if sc.rtm_connect():
                 print "Processing message: ", rawMessage
                 channel = rawMessage.get('channel', None)
                 message = rawMessage.get('text', None)
+                if message != None :
+                    message = message.lower()
                 userId = rawMessage.get('user', None)
                 messageType = rawMessage.get('type', None)
 

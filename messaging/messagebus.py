@@ -34,10 +34,11 @@ class MessageBus :
             if (self.globalCommands.get(message, None) != None) :
                 self.globalCommands[message](userId)
                 return
-        pendingCommand = self.pendingCommandsByUser.get(userId, None)
-        if (pendingCommand == None) :
+        pendingCommands = self.pendingCommandsByUser.get(userId, None)
+        if (pendingCommands == None or len(pendingCommands) == 0) :
             return "COMMAND_NOT_FOUND"
-        self.pendingCommandsByUser[userId] = None
+        pendingCommand = pendingCommands.pop()
+        self.pendingCommandsByUser[userId] = pendingCommands
         pendingCommand(targetUser, message)
 
     def registerAdminCommand(self, message, command) :
@@ -50,4 +51,7 @@ class MessageBus :
         self.registeredUsers[user["id"]] = user
 
     def registerCommandForUser(self, user, command) :
-        self.pendingCommandsByUser[user["id"]] = command
+        if (self.pendingCommandsByUser.get(user["id"], None) == None) :
+            self.pendingCommandsByUser[user["id"]] = []
+        self.pendingCommandsByUser[user["id"]].append(command)
+        print "pendingCommandsByUser", self.pendingCommandsByUser

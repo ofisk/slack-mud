@@ -132,7 +132,13 @@ def createTrainingRoom(sc, mbus, users) :
         "look into fountain": beginTrainingQuiz, 
         "look into the fountain": beginTrainingQuiz, 
         "peer into fountain": beginTrainingQuiz, 
-        "peer into the fountain": beginTrainingQuiz
+        "peer into the fountain": beginTrainingQuiz,
+        "i look at fountain": beginTrainingQuiz,
+        "i look at the fountain": beginTrainingQuiz, 
+        "i look into fountain": beginTrainingQuiz, 
+        "i look into the fountain": beginTrainingQuiz, 
+        "i peer into fountain": beginTrainingQuiz, 
+        "i peer into the fountain": beginTrainingQuiz,
     }
 
 
