@@ -1,6 +1,7 @@
 import shared
 import roomids
 import globalmap
+import character.races
 
 def createTrainingRoom(sc, mbus, users) :
     def trainingRoomOnEnter(user) :
@@ -31,6 +32,56 @@ def createTrainingRoom(sc, mbus, users) :
             """ % (user["name"])
         )
 
+    def gl_handleRaceReset(userId) :
+        def setRaceForUser(user, command) :
+            requestedRace = "UNKNOWN"
+            PLAYABLE_RACES = character.races.PLAYABLE_RACES
+            for race in PLAYABLE_RACES :
+                if (race.lower() == command.lower()) :
+                    requestedRace = race.lower()
+                    break
+            if (requestedRace != "UNKNOWN") :
+                sc.api_call(
+                    "chat.postMessage",
+                    channel="#slackmud",
+                    text="""You chose {0}, are you sure? If you'd like to change your race type '@slackmud reset race' at any time.""".format(requestedRace)
+                )
+                #TODO: continue the training quiz
+            else :
+                sc.api_call(
+                    "chat.postMessage",
+                    channel="#slackmud",
+                    text="""Sorry, I don't recognize that race, please try again."""
+                )
+                mbus.registerCommandForUser(users[userId], gl_handleRaceReset)
+
+        def listRaces() :
+            PLAYABLE_RACES = character.races.PLAYABLE_RACES
+            for race in PLAYABLE_RACES :
+                sc.api_call(
+                    "chat.postMessage",
+                    channel="#slackmud",
+                    text="{0}".format(race)
+                )
+
+        sc.api_call(
+            "chat.postMessage",
+            channel="#slackmud",
+            text="""
+                What people do you hail from?
+            """
+        )
+        listRaces()
+        sc.api_call(
+            "chat.postMessage",
+            channel="#slackmud",
+            text="""
+                To see descriptions of each race, type '@slackmud describe race' and then tell me which race you'd like me to describe.
+            """
+        )
+        mbus.registerCommandForUser(users[userId], setRaceForUser)
+
+
     def gl_handleGenderReset(userId) :
         def setGenderForUser(user, command) :
             adjective = "manly"
@@ -38,7 +89,6 @@ def createTrainingRoom(sc, mbus, users) :
             if (command.lower() != "male") :
                 adjective = "pretty"
                 gender = "female"
-            user = users[userId]
             user["gender"] = gender
             users[user["id"]] = user
             sc.api_call(
@@ -46,6 +96,8 @@ def createTrainingRoom(sc, mbus, users) :
                 channel="#slackmud",
                 text=""" You chose {0}, are you sure? Not to say you don't look very {1}. If you'd like to change your gender type '@slackmud reset gender' at any time.""".format(gender, adjective)
             )
+            if (user["training"]) :
+                gl_handleRaceReset(user["id"])
 
         sc.api_call(
             "chat.postMessage",
@@ -57,6 +109,8 @@ def createTrainingRoom(sc, mbus, users) :
         mbus.registerCommandForUser(users[userId], setGenderForUser)
 
     def beginTrainingQuiz(user) :
+        user["training"] = True
+        users[user["id"]] = user
         sc.api_call(
             "chat.postMessage",
             channel="#slackmud",

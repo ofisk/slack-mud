@@ -81,8 +81,30 @@ def handleWelcomeOfNewUser(user, name) :
     )
     rooms.globalmap.getRoom(rooms.roomids.TRAINING_ROOM_ID)["onEnter"](users[user["id"]])
 
+def handleDescribeRace(userId) :
+    user = users[userId]
+    def handleDescribeSpecificRace(user, race) :
+        if (character.races.PLAYABLE_RACES.get(race, None) == None) :
+            sc.api_call(
+                "chat.postMessage",
+                channel="#slackmud",
+                text="I'm sorry, I don't recognize that race."
+            )
+        sc.api_call(
+            "chat.postMessage",
+            channel="#slackmud",
+            text="{0}: {1}".format(race, character.races.PLAYABLE_RACES[race]["description"])
+        ) 
+    sc.api_call(
+        "chat.postMessage",
+        channel="#slackmud",
+        text="Which race would you like me to describe?"
+    )
+    mbus.registerCommandForUser(user, handleDescribeSpecificRace)
+
 mbus.registerAdminCommand('@slackmud reset world', handleReset)
 mbus.registerGlobalCommand('@slackmud join', handleJoin)
+mbus.registerGlobalCommand('@slackmud describe race', handleDescribeRace)
 if sc.rtm_connect():
     rooms.globalmap.build(sc, mbus, users)
     while True:
