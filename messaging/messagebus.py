@@ -37,7 +37,7 @@ class MessageBus :
         pendingCommands = self.pendingCommandsByUser.get(userId, None)
         if (pendingCommands == None or len(pendingCommands) == 0) :
             return "COMMAND_NOT_FOUND"
-        pendingCommand = pendingCommands.pop()
+        pendingCommand = pendingCommands.pop() #TODO: Maybe add an message print callback for the message that's now on the top of the stack?
         self.pendingCommandsByUser[userId] = pendingCommands
         pendingCommand(targetUser, message)
 
@@ -54,4 +54,3 @@ class MessageBus :
         if (self.pendingCommandsByUser.get(user["id"], None) == None) :
             self.pendingCommandsByUser[user["id"]] = []
         self.pendingCommandsByUser[user["id"]].append(command)
-        print "pendingCommandsByUser", self.pendingCommandsByUser
