@@ -4,7 +4,7 @@ A MUD client implemented for Slack
 
 Features to implement eventually:
 - OAuth Slack integration
-- Some sort of messaging / response central bus to put out responses and expect certain answers
+- [COMPLETE] Some sort of messaging / response central bus to put out responses and expect certain answers
 - Direct messaging of character setup and tutorial
 - Turn based actions and movement within the party
     - will require someone to be in command of party movement
