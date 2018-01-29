@@ -8,65 +8,41 @@ from slackclient import SlackClient
 from messaging.messagebus import MessageBus
 
 TARGET_CHANNEL = 'C3D4EAVGS'
+DIRECT_CHANNEL = 'foo'
 
 slack_token = os.environ["SLACK_BOT_TOKEN"]
 sc = SlackClient(slack_token)
 users = {}
-mbus = MessageBus()
+mbus = MessageBus(sc)
 
 def handleReset():
     users = {}
-    sc.api_call(
-        "chat.postMessage",
-        channel="#slackmud",
-        text="Resetting the world."
-    )
+    mbus.postMessageToParty("Resetting the world.")
     if len(users.keys()) == 0:
-        sc.api_call(
-            "chat.postMessage",
-            channel="#slackmud",
-            text="No users detected.  Type '@slackmud join' to create a new user."
-        )
+        mbus.postMessageToParty("No users detected.  Type '@slackmud join' to create a new user via direct message.")
 
 def tryCommandInRoom(roomId, command, user):
     room = rooms.globalmap.getRoom(roomId)
-    print room
     if command in room["commandMap"].keys():
         room["commandMap"][command](user)
     else:
-        sc.api_call(
-            "chat.postMessage",
-            channel="#slackmud",
-            text="""
-                %s tried to '%s' but was unsuccessful.
-            """ % (user['name'], command)
-        )
+        mbus.postMessageToParty("""%s tried to '%s' but was unsuccessful.""" % (user['name'], command))
 
 def tryMovementFromRoom(roomId, command, user):
     room = rooms.globalmap.getRoom(roomId)
     goPattern = re.compile("go *")
-    print room
     if goPattern.match(command):
         command = command.split("go ")[1]
     if command in room["roomConnections"].keys():
         rooms.globalmap.getRoom(room["roomConnections"][command])["onEnter"](user)
     else:
-        sc.api_call(
-            "chat.postMessage",
-            channel="#slackmud",
-            text="""
-                %s tried to go %s but ran into a wall like a dipshit.
-            """ % (user['name'], command)
-        )
+        mbus.postMessageToParty("""%s tried to go %s but was unable to go that direction.""" % (user['name'], command))
 
 def handleJoin(userId):
     newUser = {"id": userId, "reset": True}
     users[userId] = newUser
     mbus.registerUser(newUser)
-    sc.api_call(
-        "chat.postMessage",
-        channel="#slackmud",
-        text="""
+    mbus.postMessageToParty("""
             Welcome to Slack MUD.  An interactive Multi User Dungeon, built in Slack.  
             To play, just communicate with the game by commands like '@slackmud <action>'. 
             Before we start though, let's get some basic information on your character.  
@@ -75,59 +51,33 @@ def handleJoin(userId):
     )
     mbus.registerCommandForUser(newUser, handleWelcomeOfNewUser)
 
-def handleNameResetForUser(userId):
+def handleCharacterResetForUser(userId):
     handleJoin(userId)
 
 def handleWelcomeOfNewUser(user, name):
-    users[user["id"]] = {"id": user["id"], "name": name, "currentRoomId": rooms.roomids.TRAINING_ROOM_ID, "reset": False}
-    mbus.registerUser(users[user["id"]])
-    sc.api_call(
-        "chat.postMessage",
-        channel="#slackmud",
-        text="Welcome " + users[user["id"]]["name"] + "! If you don't like your character, type '@slackmud reset character' to reset (your whole character will get reset)."
-    )
-    rooms.globalmap.getRoom(rooms.roomids.TRAINING_ROOM_ID)["onEnter"](users[user["id"]])
+    userId = user["id"]
+    users[userId] = {"id": userId, "name": name, "currentRoomId": rooms.roomids.TRAINING_ROOM_ID, "reset": False}
+    user = users[userId]
+    mbus.registerUser(user)
+    mbus.postMessageToParty("Welcome %s! If you don't like your character, type '@slackmud reset character' to reset (your whole character will get reset)." % (user["name"]))
+    rooms.globalmap.getRoom(rooms.roomids.TRAINING_ROOM_ID)["onEnter"](user)
 
 def handleDescribeRace(userId):
     user = users[userId]
     def handleDescribeSpecificRace(user, race):
         if (character.races.PLAYABLE_RACES.get(race, None) == None):
-            sc.api_call(
-                "chat.postMessage",
-                channel="#slackmud",
-                text="I'm sorry, I don't recognize that race."
-            )
-        sc.api_call(
-            "chat.postMessage",
-            channel="#slackmud",
-            text="{0}: {1}".format(race, character.races.PLAYABLE_RACES[race]["description"])
-        ) 
-    sc.api_call(
-        "chat.postMessage",
-        channel="#slackmud",
-        text="Which race would you like me to describe?"
-    )
+            mbus.postMessageToUser(user, "I'm sorry, I don't recognize that race.")
+        mbus.postMessageToUser(user, "{0}: {1}".format(race, character.races.PLAYABLE_RACES[race]["description"])) 
+    mbus.postMessageToUser(user, "Which race would you like me to describe?")
     mbus.registerCommandForUser(user, handleDescribeSpecificRace)
 
 def handleDescribeClass(userId):
     user = users[userId]
     def handleDescribeSpecificClass(user, playableclass):
         if (character.classes.PLAYABLE_CLASSES.get(playableclass, None) == None):
-            sc.api_call(
-                "chat.postMessage",
-                channel="#slackmud",
-                text="I'm sorry, I don't recognize that class."
-            )
-        sc.api_call(
-            "chat.postMessage",
-            channel="#slackmud",
-            text="{0}: {1}".format(playableclass, character.classes.PLAYABLE_CLASSES[playableclass]["description"])
-        ) 
-    sc.api_call(
-        "chat.postMessage",
-        channel="#slackmud",
-        text="Which class would you like me to describe?"
-    )
+            mbus.postMessageToUser(user, "I'm sorry, I don't recognize that class.")
+        mbus.postMessageToUser(user, "{0}: {1}".format(playableclass, character.classes.PLAYABLE_CLASSES[playableclass]["description"])) 
+    mbus.postMessageToUser(user, "Which class would you like me to describe?")
     mbus.registerCommandForUser(user, handleDescribeSpecificClass)
 
 mbus.registerAdminCommand('@slackmud reset world', handleReset)
@@ -154,11 +104,11 @@ if sc.rtm_connect():
                     message = message.lower()
                 userId = rawMessage.get('user', None)
                 messageType = rawMessage.get('type', None)
-
-                if (TARGET_CHANNEL != channel or messageType != "message"):
+                print channel, TARGET_CHANNEL, DIRECT_CHANNEL, not(TARGET_CHANNEL == channel or DIRECT_CHANNEL == channel)
+                if (not(TARGET_CHANNEL == channel or DIRECT_CHANNEL == channel) or messageType != "message"):
                     continue
                 if (message == '@slackmud reset character'):
-                    handleNameResetForUser(userId)
+                    handleCharacterResetForUser(userId)
                 elif (message == 'n' or message == 'north' or message == 'go north' or
                     message == 'e' or message == 'east' or message == 'go east' or
                     message == 's' or message == 'south' or message == 'go south' or

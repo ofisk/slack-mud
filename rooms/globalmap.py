@@ -3,7 +3,7 @@ import trainingroom
 globalMap = {}
 
 def build(sc, mbus, users):
-    addRoom(trainingroom.createTrainingRoom(sc, mbus, users))
+    addRoom(trainingroom.createTrainingRoom(mbus, users))
 
 def addRoom(room):
     globalMap[room["id"]] = room

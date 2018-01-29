@@ -1,16 +1,19 @@
 ADMIN_USER = 'U10F84U2J'
+DEFAULT_CHAT_CHANNEL = "#slakmud" #TODO: make this configurable
 
 class MessageBus:
-    adminCommands = {}
-    pendingCommandsByUser = {}
-    registeredUsers = {}
-    globalCommands = {}
+    adminCommands = None
+    pendingCommandsByUser = None
+    registeredUsers = None
+    globalCommands = None
+    sc = None
 
-    def __init__(self):
-        globalCommands = {}
-        adminCommands = {}
-        pendingCommandsByUser = {}
-        registeredUsers = {}
+    def __init__(self, slackClient):
+        self.globalCommands = {}
+        self.adminCommands = {}
+        self.pendingCommandsByUser = {}
+        self.registeredUsers = {}
+        self.sc = slackClient
 
     def handleMessage(self, rawMessage):
         message = None
@@ -54,3 +57,27 @@ class MessageBus:
         if (self.pendingCommandsByUser.get(user["id"], None) == None):
             self.pendingCommandsByUser[user["id"]] = []
         self.pendingCommandsByUser[user["id"]].append(command)
+
+    def postMessageToChannel(self, channel, message):
+        self.sc.api_call(
+            "chat.postMessage",
+            channel=channel,
+            text=message
+        )
+
+    def postMessageToParty(self, message):
+        self.postMessageToChannel(DEFAULT_CHAT_CHANNEL, message)
+
+    def postMessageToUser(self, user, message):
+        channel = self.findIMChannelByUserId(user["id"])
+        self.postMessageToChannel(channel, message)
+
+    def findIMChannelByUserId(self, userId):
+        response = self.sc.api_call(
+            "im.list"
+        )
+        print response
+        for im in response["ims"]:
+            if im["user"] == userId and im["is_im"] == True:
+                return im["id"]
+        return None
