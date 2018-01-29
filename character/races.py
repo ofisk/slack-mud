@@ -11,12 +11,33 @@ PLAYABLE_RACES = {
     "dwarf": {
         "title": "Dwarf",
         "description": """
-            https://s-media-cache-ak0.pinimg.com/564x/72/51/72/72517242aab9abb6cd73bb4a8242b392.jpg
-            A proud and stern race, made sturdy to resist the dangers of their time. They are physically 
-            stronger than humans, and have great endurance, especially in the ability to resist great heat, 
-            cold, and especially damage and fatigue. However, their short stature brings about many challenges
-            and they often lack the versatility of other races.
-        """
+            https://media-waterdeep.cursecdn.com/avatars/thumbnails/6/254/420/618/636271781394265550.png
+Bold and hardy, dwarves are known as skilled warriors, miners, and workers of stone and metal.  
+Though they stand well under 5 feet tall, dwarves are so broad and compact that they can weigh 
+as much as a human standing nearly two feet taller. Dwarves can live to be more than 400 years
+old, so the oldest living dwarves often remember a very different world. Those who take up the 
+adventuring life might be motivated by a desire for treasure - for its own sake, for a specific 
+purpose, or even out of an altruistic desire to help others.
+        """,
+        "traits": {
+            "ability_bonuses": {
+                "CON": 2,
+                "subraces": {
+                    "hill_dwarf": {
+                        "WIS": 1
+                    },
+                    "mountain_dwarf": {
+                        "STR": 2
+                    }
+                }
+            },
+            "age": {
+                "mature": 50,
+                "lifespan": 350
+            },
+            "size": "medium",
+            "speed": 25
+        }
     },
     "elf": {
         "title": "Elf",
