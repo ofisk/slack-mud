@@ -1,4 +1,4 @@
-def createNewRoom(roomId, onEnterFuction, commandMap, roomConnections) :
+def createNewRoom(roomId, onEnterFuction, commandMap, roomConnections):
     return {
         "id": roomId,
         "onEnter": onEnterFuction,

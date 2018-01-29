@@ -2,9 +2,10 @@ import shared
 import roomids
 import globalmap
 import character.races
+import character.classes
 
-def createTrainingRoom(sc, mbus, users) :
-    def trainingRoomOnEnter(user) :
+def createTrainingRoom(sc, mbus, users):
+    def trainingRoomOnEnter(user):
         user["currentRoomId"] = roomids.TRAINING_ROOM_ID
         sc.api_call(
             "chat.postMessage",
@@ -16,7 +17,7 @@ def createTrainingRoom(sc, mbus, users) :
             """ % (user["name"])
         )
 
-    def trainingCompleteRoomOnEnter(user) :
+    def trainingCompleteRoomOnEnter(user):
         user["currentRoomId"] = roomids.TRAINING_COMPLETE_ROOM_ID
         sc.api_call(
             "chat.postMessage",
@@ -32,32 +33,83 @@ def createTrainingRoom(sc, mbus, users) :
             """ % (user["name"])
         )
 
-    def gl_handleRaceReset(userId) :
-        def setRaceForUser(user, command) :
-            requestedRace = "UNKNOWN"
-            PLAYABLE_RACES = character.races.PLAYABLE_RACES
-            for race in PLAYABLE_RACES :
-                if (race.lower() == command.lower()) :
-                    requestedRace = race.lower()
+    def gl_handleClassReset(userId):
+        def setClassForUser(user, command):
+            requestedClass = "UNKNOWN"
+            PLAYABLE_CLASSES = character.classes.PLAYABLE_CLASSES
+            for playableClass in PLAYABLE_CLASSES:
+                if (playableClass.lower() == command.lower()):
+                    requestedClass = playableClass.lower()
                     break
-            if (requestedRace != "UNKNOWN") :
+            if (requestedClass != "UNKNOWN"):
                 sc.api_call(
                     "chat.postMessage",
                     channel="#slackmud",
-                    text="""You chose {0}, are you sure? If you'd like to change your race type '@slackmud reset race' at any time.""".format(requestedRace)
+                    text="""You chose *{0}*. If you'd like to change your class, you'll have to reset your character with '@slackmud reset character'""".format(requestedClass)
                 )
-                #TODO: continue the training quiz
-            else :
+                #TODO: continue the training quiz?
+            else:
+                sc.api_call(
+                    "chat.postMessage",
+                    channel="#slackmud",
+                    text="""Sorry, I don't recognize that class, please try again."""
+                )
+                mbus.registerCommandForUser(user, gl_handleClassReset)
+
+        def listClasses():
+            PLAYABLE_CLASSES = character.classes.PLAYABLE_CLASSES
+            for playableClass in PLAYABLE_CLASSES:
+                sc.api_call(
+                    "chat.postMessage",
+                    channel="#slackmud",
+                    text="{0}".format(playableClass)
+                )
+
+        sc.api_call(
+            "chat.postMessage",
+            channel="#slackmud",
+            text="""
+                What profession do you follow?
+            """
+        )
+        listClasses()
+        sc.api_call(
+            "chat.postMessage",
+            channel="#slackmud",
+            text="""
+                To see descriptions of each class, type '@slackmud describe class' and then tell me which class you'd like me to describe.
+            """
+        )
+        print userId
+        mbus.registerCommandForUser(users[userId], setClassForUser)
+
+    def gl_handleRaceReset(userId):
+        def setRaceForUser(user, command):
+            requestedRace = "UNKNOWN"
+            PLAYABLE_RACES = character.races.PLAYABLE_RACES
+            for race in PLAYABLE_RACES:
+                if (race.lower() == command.lower()):
+                    requestedRace = race.lower()
+                    break
+            if (requestedRace != "UNKNOWN"):
+                sc.api_call(
+                    "chat.postMessage",
+                    channel="#slackmud",
+                    text="""You chose *{0}*. If you'd like to change your race, you'll have to reset your character with '@slackmud reset character'.""".format(requestedRace)
+                )
+                if (user["training"]):
+                    gl_handleClassReset(userId)
+            else:
                 sc.api_call(
                     "chat.postMessage",
                     channel="#slackmud",
                     text="""Sorry, I don't recognize that race, please try again."""
                 )
-                mbus.registerCommandForUser(users[userId], gl_handleRaceReset)
+                mbus.registerCommandForUser(user, gl_handleRaceReset)
 
-        def listRaces() :
+        def listRaces():
             PLAYABLE_RACES = character.races.PLAYABLE_RACES
-            for race in PLAYABLE_RACES :
+            for race in PLAYABLE_RACES:
                 sc.api_call(
                     "chat.postMessage",
                     channel="#slackmud",
@@ -81,23 +133,20 @@ def createTrainingRoom(sc, mbus, users) :
         )
         mbus.registerCommandForUser(users[userId], setRaceForUser)
 
-
-    def gl_handleGenderReset(userId) :
-        def setGenderForUser(user, command) :
-            adjective = "manly"
+    def gl_handleGenderReset(userId):
+        def setGenderForUser(user, command):
             gender = "male"
-            if (command.lower() != "male") :
-                adjective = "pretty"
+            if (command.lower() != "male"):
                 gender = "female"
             user["gender"] = gender
             users[user["id"]] = user
             sc.api_call(
                 "chat.postMessage",
                 channel="#slackmud",
-                text=""" You chose {0}, are you sure? Not to say you don't look very {1}. If you'd like to change your gender type '@slackmud reset gender' at any time.""".format(gender, adjective)
+                text=""" You chose *{0}*. If you'd like to change your gender type '@slackmud reset gender' at any time.""".format(gender)
             )
-            if (user["training"]) :
-                gl_handleRaceReset(user["id"])
+            if (user["training"]):
+                gl_handleRaceReset(userId)
 
         sc.api_call(
             "chat.postMessage",
@@ -108,7 +157,7 @@ def createTrainingRoom(sc, mbus, users) :
         )
         mbus.registerCommandForUser(users[userId], setGenderForUser)
 
-    def beginTrainingQuiz(user) :
+    def beginTrainingQuiz(user):
         user["training"] = True
         users[user["id"]] = user
         sc.api_call(

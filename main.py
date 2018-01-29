@@ -3,6 +3,7 @@ import time
 import re
 import rooms.globalmap
 import character.races
+import character.classes
 from slackclient import SlackClient
 from messaging.messagebus import MessageBus
 
@@ -13,37 +14,43 @@ sc = SlackClient(slack_token)
 users = {}
 mbus = MessageBus()
 
-def handleReset() :
+def handleReset():
     users = {}
     sc.api_call(
         "chat.postMessage",
         channel="#slackmud",
         text="Resetting the world."
     )
+    if len(users.keys()) == 0:
+        sc.api_call(
+            "chat.postMessage",
+            channel="#slackmud",
+            text="No users detected.  Type '@slackmud join' to create a new user."
+        )
 
-def tryCommandInRoom(roomId, command, user) :
+def tryCommandInRoom(roomId, command, user):
     room = rooms.globalmap.getRoom(roomId)
     print room
-    if command in room["commandMap"].keys() :
+    if command in room["commandMap"].keys():
         room["commandMap"][command](user)
-    else :
+    else:
         sc.api_call(
             "chat.postMessage",
             channel="#slackmud",
             text="""
-                %s was unable to perform action '%s' in this room.
+                %s tried to '%s' but was unsuccessful.
             """ % (user['name'], command)
         )
 
-def tryMovementFromRoom(roomId, command, user) :
+def tryMovementFromRoom(roomId, command, user):
     room = rooms.globalmap.getRoom(roomId)
     goPattern = re.compile("go *")
     print room
-    if goPattern.match(command) :
+    if goPattern.match(command):
         command = command.split("go ")[1]
-    if command in room["roomConnections"].keys() :
+    if command in room["roomConnections"].keys():
         rooms.globalmap.getRoom(room["roomConnections"][command])["onEnter"](user)
-    else :
+    else:
         sc.api_call(
             "chat.postMessage",
             channel="#slackmud",
@@ -52,7 +59,7 @@ def tryMovementFromRoom(roomId, command, user) :
             """ % (user['name'], command)
         )
 
-def handleJoin(userId) :
+def handleJoin(userId):
     newUser = {"id": userId, "reset": True}
     users[userId] = newUser
     mbus.registerUser(newUser)
@@ -68,10 +75,10 @@ def handleJoin(userId) :
     )
     mbus.registerCommandForUser(newUser, handleWelcomeOfNewUser)
 
-def handleNameResetForUser(userId) :
+def handleNameResetForUser(userId):
     handleJoin(userId)
 
-def handleWelcomeOfNewUser(user, name) :
+def handleWelcomeOfNewUser(user, name):
     users[user["id"]] = {"id": user["id"], "name": name, "currentRoomId": rooms.roomids.TRAINING_ROOM_ID, "reset": False}
     mbus.registerUser(users[user["id"]])
     sc.api_call(
@@ -81,10 +88,10 @@ def handleWelcomeOfNewUser(user, name) :
     )
     rooms.globalmap.getRoom(rooms.roomids.TRAINING_ROOM_ID)["onEnter"](users[user["id"]])
 
-def handleDescribeRace(userId) :
+def handleDescribeRace(userId):
     user = users[userId]
-    def handleDescribeSpecificRace(user, race) :
-        if (character.races.PLAYABLE_RACES.get(race, None) == None) :
+    def handleDescribeSpecificRace(user, race):
+        if (character.races.PLAYABLE_RACES.get(race, None) == None):
             sc.api_call(
                 "chat.postMessage",
                 channel="#slackmud",
@@ -102,9 +109,32 @@ def handleDescribeRace(userId) :
     )
     mbus.registerCommandForUser(user, handleDescribeSpecificRace)
 
+def handleDescribeClass(userId):
+    user = users[userId]
+    def handleDescribeSpecificClass(user, playableclass):
+        if (character.classes.PLAYABLE_CLASSES.get(playableclass, None) == None):
+            sc.api_call(
+                "chat.postMessage",
+                channel="#slackmud",
+                text="I'm sorry, I don't recognize that class."
+            )
+        sc.api_call(
+            "chat.postMessage",
+            channel="#slackmud",
+            text="{0}: {1}".format(playableclass, character.classes.PLAYABLE_CLASSES[playableclass]["description"])
+        ) 
+    sc.api_call(
+        "chat.postMessage",
+        channel="#slackmud",
+        text="Which class would you like me to describe?"
+    )
+    mbus.registerCommandForUser(user, handleDescribeSpecificClass)
+
 mbus.registerAdminCommand('@slackmud reset world', handleReset)
 mbus.registerGlobalCommand('@slackmud join', handleJoin)
 mbus.registerGlobalCommand('@slackmud describe race', handleDescribeRace)
+mbus.registerGlobalCommand('@slackmud describe class', handleDescribeClass)
+
 if sc.rtm_connect():
     rooms.globalmap.build(sc, mbus, users)
     while True:
@@ -115,27 +145,27 @@ if sc.rtm_connect():
 
         rawMessages = sc.rtm_read()
         
-        if (len(rawMessages) > 0) :
-            for rawMessage in rawMessages :
+        if (len(rawMessages) > 0):
+            for rawMessage in rawMessages:
                 print "Processing message: ", rawMessage
                 channel = rawMessage.get('channel', None)
                 message = rawMessage.get('text', None)
-                if message != None :
+                if message != None:
                     message = message.lower()
                 userId = rawMessage.get('user', None)
                 messageType = rawMessage.get('type', None)
 
-                if (TARGET_CHANNEL != channel or messageType != "message") :
+                if (TARGET_CHANNEL != channel or messageType != "message"):
                     continue
-                if (message == '@slackmud reset character') :
+                if (message == '@slackmud reset character'):
                     handleNameResetForUser(userId)
                 elif (message == 'n' or message == 'north' or message == 'go north' or
                     message == 'e' or message == 'east' or message == 'go east' or
                     message == 's' or message == 'south' or message == 'go south' or
-                    message == 'w' or message == 'west' or message == 'go west') :
+                    message == 'w' or message == 'west' or message == 'go west'):
                     tryMovementFromRoom(user["currentRoomId"], message, user)
                 result = mbus.handleMessage(rawMessage)
-                if (result == "COMMAND_NOT_FOUND") :
+                if (result == "COMMAND_NOT_FOUND"):
                     user = users[userId]
                     tryCommandInRoom(user["currentRoomId"], message, user)
         time.sleep(1)

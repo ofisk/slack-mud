@@ -1,4 +1,4 @@
-def createCharacter(name, gender, race, mudclass, stats) :
+def createCharacter(name, gender, race, mudclass, stats):
     return {
         "name": name,
         "gender": gender,
@@ -7,20 +7,20 @@ def createCharacter(name, gender, race, mudclass, stats) :
         "stats": stats
     }
 
-def setName(character, value) :
+def setName(character, value):
     setProperty(character, "name", value)
 
-def setGender(character, value) :
+def setGender(character, value):
     setProperty(character, "gender", value)
 
-def setRace(character, value) :
+def setRace(character, value):
     setProperty(character, "race", value)
 
-def setClass(character, value) :
+def setClass(character, value):
     setProperty(character, "class", value)
 
-def setStats(character, value) :
+def setStats(character, value):
     setProperty(character, "stats", value)
 
-def setProperty(character, property, value) :
+def setProperty(character, property, value):
     character[property] = value

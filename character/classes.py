@@ -34,7 +34,7 @@ PLAYABLE_CLASSES = {
     "fighter": {
         "title": "Fighter",
         "description": """
-            Questing knights, conquering overlords, royal champions, elite foot soldiers, hardened mercenaries, and bandit kings—as fighters, 
+            Questing knights, conquering overlords, royal champions, elite foot soldiers, hardened mercenaries, and bandit kings. As fighters,
             they all share an unparalleled mastery with weapons and armor, and a thorough knowledge of the skills of combat.
         """
     },
@@ -69,8 +69,8 @@ PLAYABLE_CLASSES = {
     "sorcerer": {
         "title": "Sorcerer",
         "description": """
-            Sorcerers carry a magical birthright conferred upon them by an exotic bloodline, some otherworldly influence, or exposure to unknown 
-            cosmic forces. One can’t study sorcery as one learns a language, anymore than one can learn to live a legendary life. No one chooses 
+            Sorcerers carry a magical birthright conferred upon them by an exotic bloodline, some otherworldly influence, or exposure to unknown
+            cosmic forces. One can't study sorcery as one learns a language, anymore than one can learn to live a legendary life. No one chooses
             sorcery; the power chooses the sorcerer.
         """
     },
